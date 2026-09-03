@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class anomalyDetectorService {
 
     //THIS SERVICE DETECTS ANY SUDDEN SPIKE IN THE FREQUENCY OF TRANSACTIONS. USING EWMA SCORE.
-    private static final double Z_SCORE_THRESHOLD = 3.0;
+    private static final double Z_SCORE_THRESHOLD = 2.0;
     private final ConcurrentHashMap<String, cardBaseLine> baselines = new ConcurrentHashMap<>();
 
     public boolean evaluateSpike(transactionDetails details)

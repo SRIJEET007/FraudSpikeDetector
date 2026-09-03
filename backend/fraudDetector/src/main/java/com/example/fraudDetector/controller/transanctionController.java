@@ -2,6 +2,7 @@ package com.example.fraudDetector.controller;
 
 import com.example.fraudDetector.model.transactionDetails;
 import com.example.fraudDetector.request.transactionRequest;
+import com.example.fraudDetector.response.transactionResponse;
 import com.example.fraudDetector.service.transactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +19,9 @@ public class transanctionController {
     private final transactionService service;
 
     @PostMapping
-    public ResponseEntity<transactionDetails> ingestTxn(@Valid @RequestBody transactionRequest request)
+    public ResponseEntity<transactionResponse> ingestTxn(@Valid @RequestBody transactionRequest request)
     {
-        transactionDetails details = service.processTransaction(request);
-        return ResponseEntity.ok(details);
+        transactionResponse response= service.processTransaction(request);
+        return ResponseEntity.ok(response);
     }
 }

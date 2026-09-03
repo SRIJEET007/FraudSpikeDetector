@@ -12,7 +12,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 @Service
 public class slidingWindowService {
-    public static final long WINDOW_SECOND = 60; // For now only 1-minute window is being checked.
+    //THE WINDOW SIZE OF THE TRANSACTION RECORDS BEING CHECKED.
+    //currently kept at 60s, will be updated, once migrated to redis instead of hashmap
+    public static final long WINDOW_SECOND = 60;
 
     //TODO -- upgrade to redis from local state ;-;
     public ConcurrentHashMap<String, Deque<transactionRequest>> cardWindow = new ConcurrentHashMap<>();

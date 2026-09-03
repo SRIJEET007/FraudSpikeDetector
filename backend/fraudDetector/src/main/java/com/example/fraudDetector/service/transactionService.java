@@ -1,8 +1,10 @@
 package com.example.fraudDetector.service;
 
 import com.example.fraudDetector.engine.featureEngine;
+import com.example.fraudDetector.model.Decision;
 import com.example.fraudDetector.model.transactionDetails;
 import com.example.fraudDetector.request.transactionRequest;
+import com.example.fraudDetector.response.transactionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,23 +19,35 @@ public class transactionService
     private final slidingWindowService windowService;
     private final featureEngine engine;
     private final anomalyDetectorService anomaly;
-    public transactionDetails processTransaction(transactionRequest request)
+    private final mlClientService mlService;
+    public transactionResponse processTransaction(transactionRequest request)
     {
 
         //add the to the window.
         List<transactionRequest> window = windowService.slide(request);
         //extracting them features
         transactionDetails details = engine.extract(request,window);
-        details.summary();
 
-        //detection using EWMA
-        boolean isSuspicious = anomaly.evaluateSpike(details);
+        //spike detection using EWMA
+        boolean isSpike = anomaly.evaluateSpike(details);
 
-        if (isSuspicious)
-        {
-            log.warn("Transaction stream for {} flagged by Layer 1 detector.", request.cardId());
+        //calling the ml service simultaneously along with z-scoring.
+        double mlFraudScore = mlService.getFraudProbability(details);
+
+        Decision decision;
+        if (isSpike && mlFraudScore >= 0.7999) {
+            decision = Decision.INSPECT;
+            log.warn("[!!INSPECT!!] Card {} WARNING due to Layer 1 spike. ML score: {:.4f}", request.cardId(), mlFraudScore);
+        } else if (mlFraudScore >= 0.4777) {
+            decision = Decision.SUSPICIOUS;
+            log.info("[!SUSPICIOUS!] Card {} look for any mischief. ML score: {:.4f}", request.cardId(), mlFraudScore);
+        } else {
+            decision = Decision.APPROVE;
+            log.info("[APPROVE] Card {} transaction allowed.", request.cardId());
         }
 
-        return details;
+        details.summary();
+
+        return new transactionResponse(decision,mlFraudScore,isSpike,details);
     }
 }
