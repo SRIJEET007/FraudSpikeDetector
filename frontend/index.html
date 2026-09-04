@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>FraudSpikeDetector — Real-Time Anomaly & Cost-Weighted Fraud Engine</title>
+  
+  <!-- Web Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+  <!-- Tailwind CSS Framework (for utility grid/layout) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#0a0e18",
+            "surface-container-lowest": "#0d1220",
+            "surface-container-low": "#131929",
+            "surface-container": "#181f33",
+            "surface-container-high": "#202840",
+            "surface-container-highest": "#2c3654",
+            "primary": "#00daf3",
+            "primary-container": "#00daf3",
+            "primary-fixed": "#9cf0ff",
+            "primary-fixed-dim": "#00daf3",
+            "secondary": "#4edea3",
+            "secondary-container": "#00a572",
+            "tertiary": "#ffb95f",
+            "tertiary-fixed-dim": "#ffb95f",
+            "error": "#ff5c6a",
+            "error-container": "#93000a",
+            "on-surface": "#dfe2f1",
+            "on-surface-variant": "#8c9ba0",
+            "outline": "#5c6b70",
+            "outline-variant": "#343e4c"
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Separate Custom Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+
+<body class="bg-surface font-sans text-on-surface antialiased select-none min-h-screen">
+  
+  <!-- ========================================== -->
+  <!-- 1. TOP NAVIGATION & BRANDING BAR           -->
+  <!-- ========================================== -->
+  <header class="fixed top-0 left-0 right-0 z-50 h-16 bg-surface-container-lowest/90 backdrop-blur-xl border-b border-outline-variant/30 flex items-center justify-between px-5">
+    <div class="flex items-center gap-6">
+      <!-- Project Branding -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-primary/10 border border-primary/40 flex items-center justify-center text-primary glow-cyan">
+          <span class="material-symbols-outlined text-[22px]">security</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-sm font-bold tracking-tight uppercase leading-none font-mono">
+            FraudSpike<span class="text-primary">Detector</span>
+          </span>
+          <span class="text-[10px] text-on-surface-variant font-mono leading-none mt-1">
+            STREAMING VELOCITY & DECISION ENGINE
+          </span>
+        </div>
+      </div>
+
+      <div class="h-6 w-px bg-outline-variant/40 hidden xl:block"></div>
+
+      <!-- Live Heartbeat Status Banner -->
+      <div class="hidden xl:flex items-center gap-2.5 font-mono text-[11px] text-on-surface-variant bg-surface-container-low px-3 py-1 rounded border border-outline-variant/25">
+        <span class="flex items-center gap-1.5 text-secondary">
+          <span class="w-2 h-2 rounded-full bg-secondary animate-pulse-fast"></span>
+          <span class="font-semibold" id="systemStatusLabel">IN-MEMORY ENGINE ACTIVE</span>
+        </span>
+        <span class="text-outline">|</span>
+        <span>WINDOW: <strong class="text-on-surface">60s SLIDING</strong></span>
+        <span class="text-outline">|</span>
+        <span>LATENCY: <strong class="text-secondary" id="latencyCounter">4.2ms</strong></span>
+        <span class="text-outline">|</span>
+        <span class="text-primary font-semibold" id="backendConnStatus">API: CONNECTED</span>
+      </div>
+    </div>
+
+    <!-- Navigation Section Links -->
+    <nav class="hidden lg:flex items-center gap-1">
+      <a href="#live-telemetry" class="px-3 py-1.5 rounded text-xs font-semibold bg-surface-container-high text-primary border border-primary/30 transition-colors">
+        Live Operations
+      </a>
+      <a href="#explainability" class="px-3 py-1.5 rounded text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+        Feature Explainability
+      </a>
+      <a href="#benchmarks" class="px-3 py-1.5 rounded text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+        IEEE-CIS Benchmarks
+      </a>
+      <a href="#cost-sweep" class="px-3 py-1.5 rounded text-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+        Cost Optimization Matrix
+      </a>
+    </nav>
+
+    <!-- Top Right Actions -->
+    <div class="flex items-center gap-3">
+      <!-- Search Input -->
+      <div class="relative hidden md:block w-64">
+        <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[16px]">search</span>
+        <input class="w-full h-8 pl-8 pr-3 font-mono text-xs bg-surface-container text-on-surface placeholder:text-outline rounded border border-outline-variant/40 focus:outline-none focus:border-primary transition-all" 
+               placeholder="Filter card, ID, decision..." type="text" id="searchInput" oninput="renderTransactionTable()"/>
+      </div>
+
+      <!-- Live Stream Pill -->
+      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-secondary/10 border border-secondary/30 font-mono text-[10px] text-secondary uppercase font-bold">
+        <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse-fast"></span>
+        <span>STREAMING LIVE</span>
+      </div>
+
+      <!-- Simulate Traffic Button -->
+      <button class="p-1.5 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface border border-outline-variant/30 transition-colors" 
+              title="Simulate Real-Time Influx" onclick="triggerSimulation()">
+        <span class="material-symbols-outlined text-[18px]">bolt</span>
+      </button>
+
+      <div class="h-6 w-px bg-outline-variant/40"></div>
+
+      <!-- User / Role -->
+      <div class="flex items-center gap-2">
+        <div class="flex flex-col items-end hidden sm:flex">
+          <span class="text-xs text-on-surface font-semibold leading-none">Security Officer</span>
+          <span class="text-[9px] text-primary bg-primary/10 px-1 py-0.5 rounded border border-primary/20 mt-1 uppercase font-mono">
+            SOC Level 3
+          </span>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center font-bold text-xs text-black font-mono">
+          FS
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- 2. LEFT NAVIGATION SIDEBAR                 -->
+  <!-- ========================================== -->
+  <aside class="fixed left-0 top-16 bottom-0 w-16 bg-surface-container-lowest border-r border-outline-variant/30 z-40 flex flex-col items-center py-4 justify-between">
+    <div class="flex flex-col items-center gap-2.5 w-full">
+      <button class="p-2.5 rounded text-primary bg-surface-container-high border border-primary/20 hover:text-primary transition-colors" title="Operations Live Monitor">
+        <span class="material-symbols-outlined text-[20px]">monitoring</span>
+      </button>
+      <button class="p-2.5 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Anomaly Intercept Queues">
+        <span class="material-symbols-outlined text-[20px]">shield</span>
+      </button>
+      <button class="p-2.5 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="EWMA Spike Heuristics">
+        <span class="material-symbols-outlined text-[20px]">account_tree</span>
+      </button>
+      <button class="p-2.5 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Raw Gateway Log Feed">
+        <span class="material-symbols-outlined text-[20px]">terminal</span>
+      </button>
+    </div>
+    <div class="flex flex-col items-center gap-2.5 w-full">
+      <button class="p-2.5 rounded text-secondary hover:text-white transition-colors" title="Inference Cluster Health">
+        <span class="material-symbols-outlined text-[20px]">hub</span>
+      </button>
+      <button class="p-2.5 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Engine Threshold Settings">
+        <span class="material-symbols-outlined text-[20px]">tune</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ========================================== -->
+  <!-- 3. MAIN DASHBOARD CONTENT                  -->
+  <!-- ========================================== -->
+  <div class="pl-16">
+    <main class="w-full min-h-screen pt-20 pb-12 px-6 space-y-6">
+
+      <!-- Heartbeat Context Ribbon -->
+      <div class="flex flex-wrap items-center justify-between gap-4 px-4 py-2.5 glass-panel">
+        <div class="flex items-center gap-4 flex-wrap font-mono text-xs">
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-pulse-fast absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+            </span>
+            <span class="text-primary font-bold tracking-wider">PIPELINE ACTIVE</span>
+          </div>
+          <div class="h-4 w-px bg-outline-variant/40"></div>
+          <div class="flex items-center gap-1.5 text-on-surface-variant">
+            <span class="material-symbols-outlined text-[15px] text-primary">sync_alt</span>
+            <span class="text-on-surface font-medium">IEEE-CIS Real-Time Feed</span>
+            <span class="px-1.5 py-0.5 rounded bg-surface-container-high text-primary-fixed">Held-Out Test Set</span>
+          </div>
+          <div class="h-4 w-px bg-outline-variant/40"></div>
+          <div class="flex items-center gap-2">
+            <span class="text-on-surface-variant">Decision Threshold:</span>
+            <span class="font-bold text-secondary">τ = 0.4777 (Cost-Optimal)</span>
+            <span class="text-outline">|</span>
+            <span class="text-on-surface-variant">Spike Rule:</span>
+            <span class="text-on-surface font-medium">EWMA Z &gt; 2.0</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 font-mono text-xs">
+          <span class="px-2 py-0.5 rounded-full bg-secondary/15 text-secondary font-semibold uppercase text-[10px]">
+            Zero Temporal Leakage
+          </span>
+          <span class="text-on-surface-variant" id="currentTimeUTC">14:28:16 UTC</span>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TOP 4 METRICS QUAD                         -->
+      <!-- ========================================== -->
+      <section id="live-telemetry" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        
+        <!-- Metric 1: Live Transactions Ingested -->
+        <div class="glass-panel p-4 flex flex-col justify-between space-y-2 relative overflow-hidden">
+          <div class="flex items-start justify-between">
+            <div class="flex flex-col">
+              <span class="font-mono text-[10px] uppercase text-on-surface-variant tracking-wider">Live Stream Ingested</span>
+              <span class="text-sm font-semibold text-on-surface mt-0.5">Ingested Transactions</span>
+            </div>
+            <span class="px-1.5 py-0.5 rounded bg-secondary/20 text-secondary font-mono text-xs font-semibold" id="liveStreamBadge">Live Feed</span>
+          </div>
+          <div class="flex items-baseline justify-between mt-1">
+            <div class="flex items-baseline gap-1.5">
+              <span class="font-mono text-2xl text-on-surface font-bold" id="totalTxCard">0</span>
+              <span class="font-mono text-xs text-on-surface-variant">live events</span>
+            </div>
+            <svg class="w-16 h-6 text-primary" fill="none" viewBox="0 0 80 28">
+              <path d="M1 22L12 19L24 23L36 12L48 15L60 6L72 8L79 2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+              <path d="M1 22L12 19L24 23L36 12L48 15L60 6L72 8L79 2V28H1V22Z" fill="currentColor" fill-opacity="0.1"></path>
+            </svg>
+          </div>
+          <div class="pt-1 flex items-center justify-between text-on-surface-variant font-mono text-xs">
+            <span>Offline Eval Set: <strong class="text-primary font-mono">10,000 txs</strong></span>
+            <span>Speed: <strong class="text-secondary" id="streamTps">Live</strong></span>
+          </div>
+        </div>
+
+        <!-- Metric 2: False Positive Friction -->
+        <div class="glass-panel p-4 flex flex-col justify-between space-y-2">
+          <div class="flex items-start justify-between">
+            <div class="flex flex-col">
+              <span class="font-mono text-[10px] uppercase text-on-surface-variant tracking-wider">Customer Friction Rate</span>
+              <span class="text-sm font-semibold text-on-surface mt-0.5">False Positive Rate (FPR)</span>
+            </div>
+            <span class="px-1.5 py-0.5 rounded bg-surface-container-high text-primary font-mono text-xs font-bold" id="fprBadge">8.15%</span>
+          </div>
+          <div class="flex items-baseline justify-between mt-1">
+            <div class="flex items-baseline gap-1.5">
+              <span class="font-mono text-2xl text-tertiary font-bold" id="fpCountCard">787</span>
+              <span class="font-mono text-xs text-on-surface-variant">false alarms</span>
+            </div>
+            <span class="material-symbols-outlined text-primary text-[24px]">verified_user</span>
+          </div>
+          <div class="pt-1 flex items-center justify-between text-on-surface-variant font-mono text-xs">
+            <span>Precision: <strong class="text-on-surface" id="precisionCard">23.67%</strong></span>
+            <span>Specificity: <strong class="text-secondary" id="specCard">91.85%</strong></span>
+          </div>
+        </div>
+
+        <!-- Metric 3: Anomaly & Suspicions -->
+        <div class="glass-panel p-4 flex flex-col justify-between space-y-2 relative overflow-hidden">
+          <div class="flex items-start justify-between">
+            <div class="flex flex-col">
+              <span class="font-mono text-[10px] uppercase text-on-surface-variant tracking-wider">Layer 1 & ML Alerts</span>
+              <span class="text-sm font-semibold text-on-surface mt-0.5">Suspicious Flags Caught</span>
+            </div>
+            <span class="badge badge-block">ACTIVE</span>
+          </div>
+          <div class="flex items-baseline justify-between mt-1">
+            <div class="flex items-baseline gap-1.5">
+              <span class="font-mono text-2xl text-error font-bold" id="suspiciousCountCard">1,031</span>
+              <span class="font-mono text-xs text-on-surface-variant">alerts</span>
+            </div>
+            <span class="font-mono text-xs text-secondary bg-secondary/15 px-2 py-0.5 rounded">Recall: 70.93%</span>
+          </div>
+          <div class="progress-track mt-1">
+            <div class="progress-fill bg-error" style="width: 70.9%;"></div>
+          </div>
+          <div class="flex items-center justify-between text-on-surface-variant font-mono text-xs">
+            <span class="text-error font-medium">244 Real Fraud Caught</span>
+            <span class="text-outline">100 Missed (FN)</span>
+          </div>
+        </div>
+
+        <!-- Metric 4: Net Value Saved -->
+        <div class="glass-panel p-4 flex flex-col justify-between space-y-2">
+          <div class="flex items-start justify-between">
+            <div class="flex flex-col">
+              <span class="font-mono text-[10px] uppercase text-on-surface-variant tracking-wider">Cost-Weighted Economics</span>
+              <span class="text-sm font-semibold text-on-surface mt-0.5">Net Dollar Value Generated</span>
+            </div>
+            <div class="flex items-center gap-1 text-secondary font-mono text-xs font-semibold">
+              <span class="material-symbols-outlined text-[16px]">trending_up</span> Positive ROI
+            </div>
+          </div>
+          <div class="flex items-baseline justify-between mt-1">
+            <div class="flex items-baseline gap-1.5">
+              <span class="font-mono text-2xl text-secondary font-bold" id="netValueCard">+$20,450.00</span>
+            </div>
+            <span class="font-mono text-xs text-secondary bg-secondary/15 px-1.5 py-0.5 rounded">+$8.94 / txn</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1 my-0.5 text-center font-mono text-[10px]">
+            <div class="bg-surface-container p-1 rounded">
+              <span class="text-outline block">FP Cost</span>
+              <span class="text-tertiary font-bold">-$39.35k</span>
+            </div>
+            <div class="bg-surface-container p-1 rounded">
+              <span class="text-outline block">FN Loss</span>
+              <span class="text-error font-bold">-$50.0k</span>
+            </div>
+            <div class="bg-surface-container p-1 rounded">
+              <span class="text-outline block">TP Benefit</span>
+              <span class="text-secondary font-bold">+$109.8k</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-on-surface-variant font-mono text-xs">
+            <span>$50 FP vs $500 FN</span>
+            <span class="text-secondary font-medium">Optimal Surface</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================== -->
+      <!-- FEATURE EXPLAINABILITY & LIVE EVENT STREAM                 -->
+      <!-- ========================================================== -->
+      <section id="explainability" class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        
+        <!-- Table Stream (7 of 12 cols) -->
+        <div class="xl:col-span-7 glass-panel overflow-hidden flex flex-col">
+          
+          <div class="p-4 pb-3 bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-outline-variant/20">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary text-[20px]">warning</span>
+              <span class="text-base font-bold text-on-surface">Recent Scored Payment Events</span>
+              <span class="px-2 py-0.5 rounded-full bg-surface-container-highest font-mono text-xs text-on-surface-variant">
+                Live Audited Stream
+              </span>
+            </div>
+            <!-- Filter Tabs -->
+            <div class="inline-flex rounded-lg bg-surface-container-lowest p-0.5 font-mono text-xs">
+              <button onclick="setFilter('ALL')" class="px-2.5 py-1 rounded font-medium bg-surface-container-high text-primary-fixed shadow-sm" id="btnFilterAll">All</button>
+              <button onclick="setFilter('SUSPICIOUS')" class="px-2.5 py-1 rounded text-muted hover:text-on-surface transition-colors" id="btnFilterSuspicious">Suspicious</button>
+              <button onclick="setFilter('APPROVE')" class="px-2.5 py-1 rounded text-muted hover:text-on-surface transition-colors" id="btnFilterApprove">Approved</button>
+            </div>
+          </div>
+
+          <!-- Table Content -->
+          <div class="overflow-x-auto w-full max-h-[440px]">
+            <table class="w-full text-left font-mono text-xs border-collapse">
+              <thead class="sticky top-0 bg-surface-container-lowest text-on-surface-variant uppercase text-[10px] tracking-wider border-b border-outline-variant/20 z-10">
+                <tr>
+                  <th class="py-2.5 px-3">Decision</th>
+                  <th class="py-2.5 px-3">Transaction / Card</th>
+                  <th class="py-2.5 px-3">ML Score</th>
+                  <th class="py-2.5 px-3">Amount</th>
+                  <th class="py-2.5 px-3">Spike (EWMA)</th>
+                  <th class="py-2.5 px-3">Time</th>
+                  <th class="py-2.5 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-surface-container-highest/20" id="transactionTableBody">
+                <!-- Dynamically populated via js/app.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-3 bg-surface-container-lowest flex items-center justify-between font-mono text-xs text-on-surface-variant border-t border-outline-variant/20">
+            <span>Click any event to inspect dynamic sliding-window feature vectors</span>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-primary animate-pulse-fast"></span>
+              <span>Sync rate: 3000ms</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Explainability Inspector (5 of 12 cols) -->
+        <div class="xl:col-span-5 glass-panel p-5 flex flex-col space-y-4">
+          
+          <div class="flex flex-col space-y-1 pb-3 bg-surface-container-low p-3 rounded-lg border border-outline-variant/20">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[10px] uppercase text-on-surface-variant">Real-Time Feature Vector Inspection</span>
+              <span class="badge badge-block" id="inspectorDecisionBadge">
+                DECISION: SUSPICIOUS (ML: 0.8780)
+              </span>
+            </div>
+            <div class="flex items-center gap-2 mt-1 font-mono">
+              <span class="material-symbols-outlined text-error text-[22px]">security</span>
+              <span class="text-base font-bold text-on-surface" id="inspectorKey">card:8901 (Event #3024881)</span>
+            </div>
+            <div class="flex items-center justify-between font-mono text-xs text-on-surface-variant pt-1">
+              <span class="text-tertiary" id="inspectorTag">Behavior Profile: EWMA Z&gt;2.0 Velocity Spike</span>
+              <span class="text-outline">60s Sliding Buffer</span>
+            </div>
+          </div>
+
+          <!-- Feature Vector Breakdown -->
+          <div class="flex flex-col space-y-1">
+            <span class="font-mono text-[10px] uppercase text-on-surface-variant tracking-wider">Extracted Features (featureEngine)</span>
+            <div class="grid grid-cols-2 gap-2 font-mono text-xs">
+              
+              <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                <span class="text-on-surface-variant text-[10px]">transactionCount (60s)</span>
+                <div class="flex items-baseline justify-between mt-0.5">
+                  <span class="font-bold text-on-surface" id="featTxCount">18 reqs/60s</span>
+                  <span class="text-error font-bold">+4.8σ Z</span>
+                </div>
+                <span class="text-outline text-[9px]">Normal baseline: 1.1 reqs</span>
+              </div>
+
+              <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                <span class="text-on-surface-variant text-[10px]">declineRate (%)</span>
+                <div class="flex items-baseline justify-between mt-0.5">
+                  <span class="font-bold text-error" id="featDecline">72.0%</span>
+                  <span class="text-error font-bold">ELEVATED</span>
+                </div>
+                <span class="text-outline text-[9px]">Normal baseline: &lt; 5%</span>
+              </div>
+
+              <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                <span class="text-on-surface-variant text-[10px]">uniqueIps (Fan-Out)</span>
+                <div class="flex items-baseline justify-between mt-0.5">
+                  <span class="font-bold text-on-surface" id="featIps">8 distinct IPs</span>
+                  <span class="text-tertiary font-medium">Rotating</span>
+                </div>
+                <span class="text-outline text-[9px]">Proxy rotation pattern</span>
+              </div>
+
+              <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                <span class="text-on-surface-variant text-[10px]">uniqueDevices</span>
+                <div class="flex items-baseline justify-between mt-0.5">
+                  <span class="font-bold text-on-surface" id="featDevices">6 tokens</span>
+                  <span class="text-tertiary font-medium">Multi-agent</span>
+                </div>
+                <span class="text-outline text-[9px]">Device spoofing signature</span>
+              </div>
+
+              <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                <span class="text-on-surface-variant text-[10px]">Transaction Amount</span>
+                <div class="flex items-baseline justify-between mt-0.5">
+                  <span class="font-bold text-tertiary" id="featAmount">$142.50</span>
+                  <span class="text-on-surface-variant">1.8x mean</span>
+                </div>
+                <span class="text-outline text-[9px]">Card avg: $78.00</span>
+              </div>
+
+              <div class="p-2 rounded bg-surface-container-low flex flex-col">
+                <span class="text-on-surface-variant text-[10px]">raw ML Probability</span>
+                <div class="flex items-baseline justify-between mt-0.5">
+                  <span class="font-bold text-error" id="featProb">0.8780</span>
+                  <span class="text-error font-bold">&gt;= 0.4777 Limit</span>
+                </div>
+                <span class="text-outline text-[9px]">RandomForest (IEEE-CIS)</span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Feature Impact Contribution -->
+          <div class="flex flex-col space-y-1">
+            <div class="flex items-center justify-between font-mono text-[10px]">
+              <span class="uppercase text-on-surface-variant tracking-wider">Marginal Risk Contribution</span>
+              <span class="text-primary-fixed">Base: 0.035 → Final: <span id="featContribFinal">0.878</span></span>
+            </div>
+            <div class="space-y-2 p-3 bg-surface-container-low rounded-lg font-mono text-xs">
+              <div>
+                <div class="flex justify-between text-on-surface mb-0.5">
+                  <span>Rolling Velocity Burst (60s)</span>
+                  <span class="text-error font-bold">+0.38</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill bg-error" style="width: 76%;"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-on-surface mb-0.5">
+                  <span>Decline Spike Rate (C13/C2 Count)</span>
+                  <span class="text-error font-bold">+0.26</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill bg-error" style="width: 52%;"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-on-surface mb-0.5">
+                  <span>IP/Device Dispersion Fan-out</span>
+                  <span class="text-tertiary font-bold">+0.15</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill bg-tertiary" style="width: 30%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Operator Actions -->
+          <div class="flex flex-col space-y-1 pt-1">
+            <span class="font-mono text-[10px] uppercase text-on-surface-variant tracking-wider">Operator Policy Overrides</span>
+            <div class="grid grid-cols-3 gap-2 font-mono text-xs">
+              <button onclick="operatorAction('FLAG_INSPECT')" class="px-2 py-2 rounded bg-error/15 text-error hover:bg-error hover:text-white font-semibold flex items-center justify-center gap-1 transition-all border border-error/30">
+                <span class="material-symbols-outlined text-[15px]">gavel</span>
+                <span>Freeze Card</span>
+              </button>
+              <button onclick="operatorAction('REQUEST_3DS')" class="px-2 py-2 rounded bg-tertiary/15 text-tertiary hover:bg-tertiary/30 font-semibold flex items-center justify-center gap-1 transition-all border border-tertiary/30">
+                <span class="material-symbols-outlined text-[15px]">verified_user</span>
+                <span>Force 3DS</span>
+              </button>
+              <button onclick="operatorAction('ALLOW_TEMP')" class="px-2 py-2 rounded bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-1 transition-all border border-outline-variant/30">
+                <span class="material-symbols-outlined text-[15px]">check_circle</span>
+                <span>Whitelist</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================================== -->
+      <!-- 4. BENCHMARK METRICS & THRESHOLD OPTIMIZATION              -->
+      <!-- ========================================================== -->
+      <section id="benchmarks" class="glass-panel p-5 flex flex-col space-y-4">
+        
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 bg-surface-container-low p-3.5 rounded-lg border border-outline-variant/20">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded bg-primary text-black glow-cyan font-bold">
+              <span class="material-symbols-outlined text-[24px]">verified</span>
+            </div>
+            <div class="flex flex-col">
+              <div class="flex items-center gap-2">
+                <span class="text-base font-bold text-on-surface">Audited Model Performance (IEEE-CIS Held-Out Split)</span>
+                <span class="badge badge-approved">ZERO TEMPORAL LEAKAGE</span>
+              </div>
+              <span class="text-xs text-on-surface-variant">
+                Evaluated against the final 20% temporal split (ordered strictly by TransactionDT) with realistic false-positive cost modeling.
+              </span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 font-mono text-xs text-on-surface-variant">
+            <span class="px-2 py-1 rounded bg-surface-container text-primary-fixed">Held-Out Set: 10,000 Txns</span>
+            <span class="px-2 py-1 rounded bg-surface-container text-secondary">Optimal τ: 0.4777</span>
+          </div>
+        </div>
+
+        <!-- 4 Benchmark Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <div class="p-4 bg-surface-container-low rounded-lg flex flex-col justify-between space-y-3 border border-outline-variant/20">
+            <span class="font-mono text-[10px] uppercase text-on-surface-variant">Detection Precision & Recall</span>
+            <div class="flex items-baseline justify-between">
+              <span class="font-mono text-2xl font-bold text-secondary" id="benchRecall">70.93%</span>
+              <span class="font-mono text-xs text-secondary font-semibold">Recall (244 / 344)</span>
+            </div>
+            <div class="space-y-1 font-mono text-xs">
+              <div class="flex justify-between text-on-surface-variant">
+                <span>Precision:</span>
+                <span class="text-on-surface font-bold" id="benchPrecision">23.67%</span>
+              </div>
+              <div class="flex justify-between text-on-surface-variant">
+                <span>Harmonic F1-Score:</span>
+                <span class="text-primary font-bold" id="benchF1">0.3549</span>
+              </div>
+            </div>
+            <span class="text-[10px] text-outline">7x lift over random chance in a 3.44% imbalanced dataset.</span>
+          </div>
+
+          <div class="p-4 bg-surface-container-low rounded-lg flex flex-col justify-between space-y-3 border border-outline-variant/20">
+            <span class="font-mono text-[10px] uppercase text-on-surface-variant">False Positive Friction</span>
+            <div class="flex items-baseline justify-between">
+              <span class="font-mono text-2xl font-bold text-primary" id="benchFPR">8.15%</span>
+              <span class="font-mono text-xs text-primary font-semibold">&lt; 1 in 12 genuine users</span>
+            </div>
+            <div class="space-y-1 font-mono text-xs">
+              <div class="flex justify-between text-on-surface-variant">
+                <span>False Positives (FP):</span>
+                <span class="text-tertiary font-bold" id="benchFP">787 txs</span>
+              </div>
+              <div class="flex justify-between text-on-surface-variant">
+                <span>True Negatives (TN):</span>
+                <span class="text-secondary font-medium" id="benchTN">8,869 txs</span>
+              </div>
+            </div>
+            <span class="text-[10px] text-outline">Priced at $50 per false alarm (investigation & customer churn).</span>
+          </div>
+
+          <div class="p-4 bg-surface-container-low rounded-lg flex flex-col justify-between space-y-2 border border-outline-variant/20">
+            <span class="font-mono text-[10px] uppercase text-on-surface-variant">Confusion Matrix (N = 10,000)</span>
+            <div class="grid grid-cols-2 gap-1.5 font-mono text-xs my-1">
+              <div class="p-2 rounded bg-secondary/15 flex flex-col">
+                <span class="text-outline text-[9px] uppercase">True Positive (TP)</span>
+                <span class="font-bold text-secondary text-sm" id="matrixTP">244</span>
+              </div>
+              <div class="p-2 rounded bg-error/20 flex flex-col">
+                <span class="text-outline text-[9px] uppercase">False Positive (FP)</span>
+                <span class="font-bold text-tertiary text-sm" id="matrixFP">787</span>
+              </div>
+              <div class="p-2 rounded bg-error/20 flex flex-col">
+                <span class="text-outline text-[9px] uppercase">False Negative (FN)</span>
+                <span class="font-bold text-error text-sm" id="matrixFN">100</span>
+              </div>
+              <div class="p-2 rounded bg-surface-container flex flex-col">
+                <span class="text-outline text-[9px] uppercase">True Negative (TN)</span>
+                <span class="font-bold text-on-surface text-sm" id="matrixTN">8,869</span>
+              </div>
+            </div>
+            <span class="text-[10px] text-on-surface-variant">Accuracy: 91.13% across all test rows</span>
+          </div>
+
+          <div class="p-4 bg-surface-container-low rounded-lg flex flex-col justify-between space-y-3 border border-outline-variant/20">
+            <div class="flex items-center justify-between font-mono">
+              <span class="text-[10px] uppercase text-on-surface-variant">Cost-Optimal Cutoff</span>
+              <span class="px-1.5 py-0.5 rounded bg-primary text-black text-xs font-bold">τ = 0.4777</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="font-mono text-lg font-bold text-secondary" id="benchNetValue">+$20,450.00</span>
+              <span class="text-on-surface-variant font-mono text-xs mt-0.5">Net Savings on 10k transactions</span>
+            </div>
+            <div class="p-2 rounded bg-surface-container text-[11px] font-mono text-on-surface-variant leading-tight">
+              Balances $50 customer support friction against $500 direct chargeback loss per missed fraud.
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Threshold Sweep Table -->
+        <div id="cost-sweep" class="mt-4 pt-4 border-t border-outline-variant/30 flex flex-col space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary text-[20px]">tune</span>
+              <span class="text-sm font-bold text-on-surface">Threshold Optimization Sweep (Precision vs. Cost Trade-off)</span>
+            </div>
+            <span class="font-mono text-xs text-secondary font-semibold">Max Financial Value at τ = 0.4777 (+$20,450)</span>
+          </div>
+
+          <div class="overflow-x-auto rounded-lg border border-outline-variant/20">
+            <table class="w-full text-left font-mono text-xs">
+              <thead class="bg-surface-container-low text-on-surface-variant uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th class="py-2 px-3">Threshold (τ)</th>
+                  <th class="py-2 px-3">Precision</th>
+                  <th class="py-2 px-3">Recall</th>
+                  <th class="py-2 px-3">F1-Score</th>
+                  <th class="py-2 px-3">FPR</th>
+                  <th class="py-2 px-3">False Positives</th>
+                  <th class="py-2 px-3">Fraud Caught</th>
+                  <th class="py-2 px-3 text-right">Net Financial Value ($)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-surface-container-highest/20" id="sweepTableBody">
+                <!-- Populated dynamically via js/app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Side-by-Side Proof Card -->
+        <div class="flex flex-col space-y-2 pt-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary text-[18px]">balance</span>
+              <span class="text-sm font-bold text-on-surface">Side-by-Side Proof of Discrimination (Attack Spike vs. Benign Traffic)</span>
+            </div>
+            <span class="font-mono text-xs text-on-surface-variant hidden sm:inline">
+              Layer-1 In-Memory Sliding Windows + Statistical EWMA Z-Score
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Attack Spike Card -->
+            <div class="p-4 bg-surface-container-low rounded-xl flex flex-col justify-between space-y-3 relative overflow-hidden border border-outline-variant/20">
+              <div class="absolute top-0 right-0 px-3 py-1 bg-error/20 text-error font-mono text-[10px] font-bold rounded-bl-lg border-l border-b border-error/30">
+                AUTONOMOUS MITIGATION
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="p-1 rounded bg-error/20 text-error">
+                    <span class="material-symbols-outlined text-[18px]">block</span>
+                  </span>
+                  <span class="text-sm font-bold text-error">ATTACK SPIKE: Distributed Card Velocity Burst</span>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1">
+                  Automated card testing botnet validating stolen credentials via rapid authorization attempts across rotating IPs.
+                </p>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 font-mono text-xs p-2.5 bg-surface-container rounded-lg">
+                <div>
+                  <span class="text-outline text-[10px] block">Velocity</span>
+                  <span class="font-bold text-on-surface">18 req/min</span>
+                </div>
+                <div>
+                  <span class="text-outline text-[10px] block">Decline Rate</span>
+                  <span class="font-bold text-error">72.0%</span>
+                </div>
+                <div>
+                  <span class="text-outline text-[10px] block">Distinct IPs</span>
+                  <span class="font-bold text-tertiary">8 Proxies</span>
+                </div>
+                <div class="mt-1">
+                  <span class="text-outline text-[10px] block">Avg Ticket</span>
+                  <span class="font-bold text-on-surface">$142.50</span>
+                </div>
+                <div class="mt-1">
+                  <span class="text-outline text-[10px] block">Spike Alert</span>
+                  <span class="font-bold text-error">EWMA Z &gt; 2.0</span>
+                </div>
+                <div class="mt-1">
+                  <span class="text-outline text-[10px] block">Final Decision</span>
+                  <span class="font-bold text-error">SUSPICIOUS</span>
+                </div>
+              </div>
+
+              <div class="p-2 rounded-lg bg-error/15 flex items-center justify-between font-mono text-xs text-error">
+                <span class="flex items-center gap-1.5 font-bold">
+                  <span class="material-symbols-outlined text-[16px]">shield</span>
+                  Financial Loss Prevented:
+                </span>
+                <span class="font-bold text-sm text-error">$500.00 / caught event</span>
+              </div>
+            </div>
+
+            <!-- Benign Traffic Card -->
+            <div class="p-4 bg-surface-container-low rounded-xl flex flex-col justify-between space-y-3 relative overflow-hidden border border-outline-variant/20">
+              <div class="absolute top-0 right-0 px-3 py-1 bg-secondary/20 text-secondary font-mono text-[10px] font-bold rounded-bl-lg border-l border-b border-secondary/30">
+                ZERO CUSTOMER FRICTION
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="p-1 rounded bg-secondary/20 text-secondary">
+                    <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                  </span>
+                  <span class="text-sm font-bold text-secondary">LEGITIMATE TRAFFIC: Genuine User Checkout</span>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1">
+                  Established card holder making genuine ecommerce purchase with zero declines and standard ticket sizing.
+                </p>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 font-mono text-xs p-2.5 bg-surface-container rounded-lg">
+                <div>
+                  <span class="text-outline text-[10px] block">Velocity</span>
+                  <span class="font-bold text-on-surface">1 req/min</span>
+                </div>
+                <div>
+                  <span class="text-outline text-[10px] block">Decline Rate</span>
+                  <span class="font-bold text-secondary">0.0%</span>
+                </div>
+                <div>
+                  <span class="text-outline text-[10px] block">Distinct IPs</span>
+                  <span class="font-bold text-on-surface">1 IP</span>
+                </div>
+                <div class="mt-1">
+                  <span class="text-outline text-[10px] block">Avg Ticket</span>
+                  <span class="font-bold text-on-surface">$50.00</span>
+                </div>
+                <div class="mt-1">
+                  <span class="text-outline text-[10px] block">Spike Alert</span>
+                  <span class="font-bold text-secondary">Normal</span>
+                </div>
+                <div class="mt-1">
+                  <span class="text-outline text-[10px] block">Final Decision</span>
+                  <span class="font-bold text-secondary">APPROVE</span>
+                </div>
+              </div>
+
+              <div class="p-2 rounded-lg bg-secondary/15 flex items-center justify-between font-mono text-xs text-secondary">
+                <span class="flex items-center gap-1.5 font-bold">
+                  <span class="material-symbols-outlined text-[16px]">point_of_sale</span>
+                  Checkout Friction Saved:
+                </span>
+                <span class="font-bold text-sm text-secondary">8,869 Genuine Transactions</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-2.5 rounded-lg shadow-xl font-mono text-xs flex items-center gap-2 border"></div>
+
+  <!-- Separate Logic Script -->
+  <script src="js/app.js"></script>
+</body>
+</html>

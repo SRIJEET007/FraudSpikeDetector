@@ -2,11 +2,11 @@ package com.example.fraudDetector.controller;
 
 import com.example.fraudDetector.model.EvaluationRun;
 import com.example.fraudDetector.repository.EvaluationRunRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -22,7 +22,7 @@ import java.util.Optional;
 public class EvaluationController {
 
     private final EvaluationRunRepository repository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final tools.jackson.databind.ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping("/latest")
     public ResponseEntity<?> getLatestEvaluation() {

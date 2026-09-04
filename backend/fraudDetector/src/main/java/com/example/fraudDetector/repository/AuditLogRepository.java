@@ -11,18 +11,23 @@ import java.util.List;
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
-    List<AuditLog> findByCardIdOrderByCreatedAtDesc(String cardId);
-    List<AuditLog> findByDecision(Decision decision);
-    List<AuditLog> findByCardIdAndDecision(String cardId, Decision decision);
-    List<AuditLog> findByCreatedAtBetweenOrderByCreatedAtDesc(
-            LocalDateTime start, LocalDateTime end);
+        List<AuditLog> findByCardIdOrderByCreatedAtDesc(String cardId);
 
-    List<AuditLog> findByCardIdAndCreatedAtBetweenOrderByCreatedAtDesc(
-            String cardId, LocalDateTime start, LocalDateTime end);
+        List<AuditLog> findByDecision(Decision decision);
 
-    List<AuditLog> findBySpikeTrue();
+        List<AuditLog> findByCardIdAndDecision(String cardId, Decision decision);
 
-    List<AuditLog> findByCardIdAndSpikeTrue(String cardId);
+        List<AuditLog> findByCreatedAtBetweenOrderByCreatedAtDesc(
+                        LocalDateTime start, LocalDateTime end);
 
-    AuditLog findByTransactionId(String transactionId);
+        List<AuditLog> findByCardIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+                        String cardId, LocalDateTime start, LocalDateTime end);
+
+        List<AuditLog> findBySpikeTrue();
+
+        List<AuditLog> findTop50ByOrderByCreatedAtDesc();
+
+        List<AuditLog> findAllByOrderByCreatedAtDesc();
+
+        AuditLog findByTransactionId(String transactionId);
 }

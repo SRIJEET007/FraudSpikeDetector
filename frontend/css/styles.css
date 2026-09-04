@@ -1,0 +1,176 @@
+/* =============================================================================
+   FraudSpikeDetector — Design System & Custom Tokens
+   Modern high-density dark mode telemetry operations center
+   ============================================================================= */
+
+:root {
+  --bg-surface: #0a0e18;
+  --bg-card: #111624;
+  --bg-card-low: #171c2b;
+  --bg-card-high: #1e2436;
+  --bg-card-highest: #283045;
+  
+  --primary: #00daf3;
+  --primary-glow: rgba(0, 218, 243, 0.15);
+  --primary-light: #c3f5ff;
+  --primary-dark: #004f58;
+
+  --secondary: #4edea3;
+  --secondary-glow: rgba(78, 222, 163, 0.15);
+  --secondary-dark: #003824;
+
+  --error: #ff5c6a;
+  --error-bg: rgba(255, 92, 106, 0.12);
+  --error-border: rgba(255, 92, 106, 0.35);
+
+  --warning: #ffb95f;
+  --warning-bg: rgba(255, 185, 95, 0.12);
+  --warning-border: rgba(255, 185, 95, 0.35);
+
+  --text-main: #dfe2f1;
+  --text-muted: #8c9ba0;
+  --text-dim: #5c6b70;
+
+  --border: rgba(78, 100, 115, 0.25);
+  --border-focus: rgba(0, 218, 243, 0.5);
+  
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--bg-surface);
+  color: var(--text-main);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-card-highest);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+/* Base Utility Classes */
+.glass-panel {
+  background: rgba(17, 22, 36, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.glass-panel-subtle {
+  background: rgba(23, 28, 43, 0.6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px var(--primary-glow);
+}
+
+.glow-green {
+  box-shadow: 0 0 20px var(--secondary-glow);
+}
+
+/* Status Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-block, .badge-suspicious {
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1px solid var(--error-border);
+}
+
+.badge-allow, .badge-approved {
+  background: var(--secondary-glow);
+  color: var(--secondary);
+  border: 1px solid rgba(78, 222, 163, 0.35);
+}
+
+.badge-review, .badge-warn {
+  background: var(--warning-bg);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+}
+
+.badge-info {
+  background: var(--primary-glow);
+  color: var(--primary);
+  border: 1px solid rgba(0, 218, 243, 0.35);
+}
+
+/* Interactive Elements */
+button {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  transition: all 0.15s ease-in-out;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Tooltip & Micro Animation */
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.1); }
+}
+
+.animate-pulse-fast {
+  animation: pulseGlow 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Metric progress bars */
+.progress-track {
+  width: 100%;
+  height: 5px;
+  background: var(--bg-card-highest);
+  border-radius: 999px;
+  overflow: hidden;
+  display: flex;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
