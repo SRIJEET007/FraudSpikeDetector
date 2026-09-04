@@ -51,8 +51,10 @@ def score_transaction(features: FeatureRequest):
     attack_probability = float(probabilities[0][1])
     
     return {
+        "fraudProbability": attack_probability,
         "attackProbability": attack_probability
     }
+
 
 if __name__ == "__main__":
     import uvicorn

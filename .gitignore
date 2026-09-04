@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment variables & secrets
+.env
+config.json
+
+# Build outputs
+dist/
+build/
+target/
+.gradle/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.ipynb_checkpoints/
+
+# IDE & OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Datasets & Large Files (DO NOT PUSH TO GITHUB)
+*.csv
+*.tsv
+data/
+ml/data/
+**/data/*.csv
+raw_results.json
+**/eval_results/raw_results.json
+*.pkl

@@ -1,8 +1,10 @@
 package com.example.fraudDetector.service;
 
 import com.example.fraudDetector.engine.featureEngine;
+import com.example.fraudDetector.model.AuditLog;
 import com.example.fraudDetector.model.Decision;
 import com.example.fraudDetector.model.transactionDetails;
+import com.example.fraudDetector.repository.AuditLogRepository;
 import com.example.fraudDetector.request.transactionRequest;
 import com.example.fraudDetector.response.transactionResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,8 @@ public class transactionService
     private final featureEngine engine;
     private final anomalyDetectorService anomaly;
     private final mlClientService mlService;
+    private final AuditLogRepository auditLogRepository;
+
     public transactionResponse processTransaction(transactionRequest request)
     {
 
@@ -47,6 +51,29 @@ public class transactionService
         }
 
         details.summary();
+
+        AuditLog auditLog = AuditLog.builder()
+                .transactionId(request.transactionId())
+                .cardId(request.cardId())
+                .ipAddress(request.ipAddress())
+                .deviceId(request.deviceId())
+                .amount(request.amount())
+                .transactionTimestamp(request.timeStamp())
+                .transactionCount(details.transactionCount())
+                .uniqueIps(details.uniqueIps())
+                .uniqueDevices(details.uniqueDevices())
+                .declineRate(details.declineRate())
+                .averageAmount(details.averageAmount())
+                .amountRatio(details.amountRatio())
+                .hourOfDay(details.hourOfDay())
+                .dayOfWeek(details.dayOfWeek())
+                .decision(decision)
+                .mlScore(mlFraudScore)
+                .spike(isSpike)
+                .build();
+
+        auditLogRepository.save(auditLog);
+        //log.info("[AUDIT] Saved audit log for transaction {}", request.transactionId());
 
         return new transactionResponse(decision,mlFraudScore,isSpike,details);
     }

@@ -26,14 +26,14 @@ public class anomalyDetectorService {
         boolean isSuspicious = zScore > Z_SCORE_THRESHOLD;
         baseline.update(currentValue,isSuspicious);
 
-        if (isSuspicious) {
-            System.err.println("\n [SPIKE DETECTED] Layer 1 Alert!");
-            System.err.printf("Card: %s | Current Count: %.1f | Normal Mean: %.1f | Z-Score: %.2f\n",
-                    details.cardId(), currentValue, mean, zScore);
-        } else {
-            System.out.printf(" [Normal] Card: %s | Count: %.1f | Mean: %.1f | Z-Score: %.2f\n",
-                    details.cardId(), currentValue, mean, zScore);
-        }
+//        if (isSuspicious) {
+//            System.err.println("\n [SPIKE DETECTED] Layer 1 Alert!");
+//            System.err.printf("Card: %s | Current Count: %.1f | Normal Mean: %.1f | Z-Score: %.2f\n",
+//                    details.cardId(), currentValue, mean, zScore);
+//        } else {
+//            System.out.printf(" [Normal] Card: %s | Count: %.1f | Mean: %.1f | Z-Score: %.2f\n",
+//                    details.cardId(), currentValue, mean, zScore);
+//        }
         return isSuspicious;
     }
 }
